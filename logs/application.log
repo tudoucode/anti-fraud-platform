@@ -1,0 +1,33 @@
+2025-12-28 12:20:18.396  INFO 166408 --- [main] com.antifraud.BackendApplication         : Starting BackendApplication using Java 17.0.17 on DESKTOP-U8H7QQA with PID 166408 (D:\software\Java\deaProjects\backend\target\classes started by Tudou in D:\software\Java\deaProjects\backend)
+2025-12-28 12:20:18.407  INFO 166408 --- [main] com.antifraud.BackendApplication         : No active profile set, falling back to 1 default profile: "default"
+2025-12-28 12:20:20.783  INFO 166408 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8080 (http)
+2025-12-28 12:20:20.804  INFO 166408 --- [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2025-12-28 12:20:20.805  INFO 166408 --- [main] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.83]
+2025-12-28 12:20:20.996  INFO 166408 --- [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2025-12-28 12:20:20.997  INFO 166408 --- [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 2470 ms
+2025-12-28 12:20:22.590  INFO 166408 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8080 (http) with context path ''
+2025-12-28 12:20:22.604  INFO 166408 --- [main] com.antifraud.BackendApplication         : Started BackendApplication in 4.996 seconds (JVM running for 5.759)
+2025-12-28 12:20:59.376  INFO 166408 --- [http-nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-12-28 12:20:59.376  INFO 166408 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2025-12-28 12:20:59.377  INFO 166408 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2025-12-28 12:20:59.629  WARN 166408 --- [http-nio-8080-exec-2] c.b.m.c.t.support.ReflectLambdaMeta      : Unable to make field private final java.lang.Class java.lang.invoke.SerializedLambda.capturingClass accessible: module java.base does not "opens java.lang.invoke" to unnamed module @5a8e6209
+2025-12-28 12:20:59.653  INFO 166408 --- [http-nio-8080-exec-2] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2025-12-28 12:20:59.925  INFO 166408 --- [http-nio-8080-exec-2] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2025-12-28 12:23:26.052  INFO 166408 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2025-12-28 12:23:26.069  INFO 166408 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2025-12-28 12:24:26.491  INFO 171488 --- [main] com.antifraud.BackendApplication         : Starting BackendApplication using Java 17.0.17 on DESKTOP-U8H7QQA with PID 171488 (D:\software\Java\deaProjects\backend\target\classes started by Tudou in D:\software\Java\deaProjects\backend)
+2025-12-28 12:24:26.496  INFO 171488 --- [main] com.antifraud.BackendApplication         : No active profile set, falling back to 1 default profile: "default"
+2025-12-28 12:24:28.889  INFO 171488 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8080 (http)
+2025-12-28 12:24:28.909  INFO 171488 --- [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2025-12-28 12:24:28.909  INFO 171488 --- [main] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.83]
+2025-12-28 12:24:29.147  INFO 171488 --- [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2025-12-28 12:24:29.147  INFO 171488 --- [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 2563 ms
+2025-12-28 12:24:30.413  INFO 171488 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8080 (http) with context path ''
+2025-12-28 12:24:30.428  INFO 171488 --- [main] com.antifraud.BackendApplication         : Started BackendApplication in 4.702 seconds (JVM running for 5.383)
+2025-12-28 12:24:47.156  INFO 171488 --- [http-nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-12-28 12:24:47.158  INFO 171488 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2025-12-28 12:24:47.159  INFO 171488 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2025-12-28 12:24:47.329  INFO 171488 --- [http-nio-8080-exec-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2025-12-28 12:24:47.562  INFO 171488 --- [http-nio-8080-exec-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2025-12-28 12:25:22.911  INFO 171488 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2025-12-28 12:25:22.924  INFO 171488 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.

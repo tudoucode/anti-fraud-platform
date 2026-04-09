@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>夕阳红护盾</title>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: #f3f4f6;
+            margin: 0;
+            overflow: hidden;
+        }
+        #app {
+            max-width: 480px;
+            margin: 0 auto;
+            height: 100dvh;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.05);
+        }
+
+        /* 宫格按钮样式 */
+        .grid-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            color: white;
+            box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.15);
+            transition: transform 0.1s, filter 0.1s;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        .grid-btn:active { transform: scale(0.96); filter: brightness(0.9); }
+        .grid-btn i { font-size: 3.5rem; margin-bottom: 0.8rem; }
+        .grid-btn span { font-size: 1.6rem; font-weight: bold; letter-spacing: 1px; }
+
+        /* 装饰背景图标 */
+        .grid-btn::after {
+            content: ''; position: absolute; right: -10px; bottom: -10px;
+            font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: 6rem;
+            opacity: 0.1; transform: rotate(-15deg);
+        }
+        .btn-learn::after { content: '\f19d'; }
+        .btn-quiz::after { content: '\f044'; }
+        .btn-cases::after { content: '\f002'; }
+        .btn-help::after { content: '\f095'; }
+
+        /* 底部大按钮 */
+        .footer-btn {
+            background: #F0FDF4; border-top: 2px solid #DCFCE7;
+            padding: 1.5rem; transition: background 0.2s;
+        }
+        .footer-btn:active { background: #DCFCE7; }
+
+        /* 动画 */
+        .modal-card { animation: zoomIn 0.2s ease-out; }
+        @keyframes zoomIn { from { transform: scale(0.9); } to { transform: scale(1); } }
+
+        /* 家庭成员列表项 */
+        .family-item {
+            border: 2px solid #e5e7eb; border-radius: 1rem; padding: 1rem;
+            margin-bottom: 0.8rem; display: flex; align-items: center; justify-content: space-between;
+            transition: all 0.2s;
+        }
+        .family-item.active { border-color: #22c55e; background-color: #f0fdf4; }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <!-- 1. 登录/注册页 -->
+    <div v-if="!isLoggedIn" class="flex-1 flex flex-col justify-center p-8 bg-white overflow-y-auto">
+        <div class="text-center mb-8">
+            <i class="fas fa-shield-halved text-red-600 text-8xl mb-6"></i>
+            <h1 class="text-5xl font-bold text-gray-800">夕阳红护盾</h1>
+            <p class="text-2xl text-gray-500 mt-4">{{ isRegister ? '注册新账号' : '您的安全守护专家' }}</p>
+        </div>
+
+        <!-- 登录表单 -->
+        <div v-if="!isRegister" class="space-y-8">
+            <input v-model="loginForm.phone" type="tel" maxlength="11" class="w-full p-6 text-3xl border-4 border-gray-100 rounded-3xl text-center outline-none focus:border-red-500 bg-gray-50 font-bold tracking-widest" placeholder="输入手机号">
+            <button @click="handleLogin" class="w-full py-6 rounded-3xl bg-red-600 text-white text-3xl font-bold shadow-xl active:scale-95 transition-transform">
+                一键登录
+            </button>
+            <div class="text-center mt-6">
+                <p class="text-gray-500 text-lg mb-2">还没有账号？</p>
+                <button @click="isRegister = true" class="text-red-600 text-xl font-bold border-b-2 border-red-200 pb-1">点击注册新账号</button>
+            </div>
+        </div>
+
+        <!-- 注册表单 -->
+        <div v-else class="space-y-6">
+            <input v-model="regForm.phone" type="tel" maxlength="11" class="w-full p-6 text-2xl border-4 border-gray-100 rounded-3xl text-center outline-none focus:border-blue-500 bg-gray-50 font-bold" placeholder="输入11位手机号">
+            <input v-model="regForm.username" type="text" maxlength="6" class="w-full p-6 text-2xl border-4 border-gray-100 rounded-3xl text-center outline-none focus:border-blue-500 bg-gray-50 font-bold" placeholder="输入您的名字">
+            <button @click="handleRegister" class="w-full py-6 rounded-3xl bg-blue-600 text-white text-3xl font-bold shadow-xl active:scale-95 transition-transform">
+                立即注册
+            </button>
+            <button @click="isRegister = false" class="w-full py-4 text-gray-500 text-xl font-bold">
+                返回登录
+            </button>
+        </div>
+
+        <!-- 后台管理入口 (新增) -->
+        <div class="mt-12 text-center border-t border-gray-100 pt-6">
+            <a href="../admin/index.html" class="text-gray-400 text-sm hover:text-blue-600 transition-colors flex items-center justify-center gap-2">
+                <i class="fas fa-user-cog"></i>
+                <span>后台管理登录</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 2. 主界面 -->
+    <template v-else>
+        <header class="bg-red-600 text-white p-5 flex justify-between items-center shadow-md z-10">
+            <div>
+                <!-- 点击用户名编辑个人信息 -->
+                <div class="flex items-center gap-3">
+                    <div @click="openProfileModal" class="flex items-center gap-2 cursor-pointer active:opacity-80">
+                        <h2 class="text-2xl font-bold border-b border-transparent hover:border-white transition-all">{{ user.username }}</h2>
+                        <i class="fas fa-pen-to-square text-sm opacity-80"></i>
+                    </div>
+                    <button @click="handleLogout" class="text-xs bg-red-800 border border-red-400 text-white px-3 py-1 rounded-lg shadow-sm active:scale-95 transition-transform flex items-center gap-1">
+                        <i class="fas fa-sign-out-alt"></i> 退出
+                    </button>
+                </div>
+                <!-- 点击风险等级查看报告 -->
+                <div class="flex items-center gap-2 mt-2 cursor-pointer" @click="showReport">
+                    <span class="text-base opacity-90">风险等级：</span>
+                    <span :class="riskBadgeClass" class="px-3 py-1 rounded text-sm font-bold text-gray-800 bg-white shadow-sm flex items-center gap-1">
+                            {{ riskText }} <i class="fas fa-chevron-right text-xs"></i>
+                        </span>
+                </div>
+            </div>
+            <button @click="toggleVoice" :class="voiceOn ? 'bg-yellow-400 text-red-900 border-yellow-400' : 'border-2 border-white bg-transparent'" class="px-4 py-2 rounded-full flex items-center gap-2 transition-colors">
+                <i :class="voiceOn ? 'fas fa-volume-high' : 'fas fa-volume-xmark'" class="text-xl"></i>
+                <span class="font-bold text-base">{{ voiceOn ? '语音开' : '语音关' }}</span>
+            </button>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-5 bg-gray-50">
+            <!-- 首页 -->
+            <div v-if="currentView === 'home'" class="h-full flex flex-col gap-5">
+                <div class="bg-white p-5 rounded-3xl border-l-8 border-orange-500 shadow-sm flex items-center justify-between active:bg-gray-50 transition-colors">
+                    <div class="flex items-center gap-4" @click="speak('欢迎使用夕阳红护盾')">
+                        <i class="fas fa-sun text-orange-500 text-4xl"></i>
+                        <div>
+                            <p class="text-xl font-bold text-gray-800">今天也是平安的一天</p>
+                            <p class="text-gray-500 text-base mt-1">时刻保持警惕哦</p>
+                        </div>
+                    </div>
+                    <button @click="showReport" class="flex flex-col items-center justify-center bg-orange-100 text-orange-600 px-4 py-2 rounded-2xl border border-orange-200 shadow-sm active:scale-95">
+                        <i class="fas fa-file-contract text-2xl mb-1"></i>
+                        <span class="text-xs font-bold">看报告</span>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 flex-1 content-start">
+                    <div @click="switchView('learn')" class="grid-btn bg-blue-500 btn-learn">
+                        <i class="fas fa-book-open"></i><span>学知识</span>
+                    </div>
+                    <div @click="loadQuiz" class="grid-btn bg-green-600 btn-quiz">
+                        <i class="fas fa-pen-to-square"></i><span>做测试</span>
+                    </div>
+                    <div @click="switchView('cases')" class="grid-btn bg-purple-500 btn-cases">
+                        <i class="fas fa-magnifying-glass"></i><span>看案例</span>
+                    </div>
+                    <div @click="callHelp" class="grid-btn bg-red-500 btn-help">
+                        <i class="fas fa-phone-volume"></i><span>呼叫子女</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 学知识 -->
+            <div v-if="currentView === 'learn'" class="space-y-5">
+                <button @click="currentView = 'home'" class="bg-white px-6 py-3 rounded-xl text-blue-600 font-bold shadow-sm mb-2 flex items-center gap-2 text-lg active:bg-blue-50"><i class="fas fa-arrow-left"></i> 返回首页</button>
+
+                <h3 class="text-2xl font-bold border-l-8 border-blue-500 pl-4 text-gray-800">反诈视频</h3>
+                <div class="space-y-4">
+                    <div v-if="learnVideos.length === 0" class="text-center text-gray-400 py-4 text-xl">加载中或暂无视频...</div>
+                    <div v-for="v in learnVideos" class="bg-white p-5 rounded-2xl shadow-sm flex items-center gap-5 active:bg-blue-50 transition-colors" @click="playVideo(v)">
+                        <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-2xl flex-shrink-0">
+                            <i class="fas fa-play"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-xl font-bold text-gray-900">{{ v.title }}</h4>
+                            <p class="text-gray-400 text-base mt-1">点击播放 ({{ v.duration || '视频' }})</p>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="text-2xl font-bold border-l-8 border-orange-500 pl-4 text-gray-800 mt-6">防骗锦囊</h3>
+                <div class="space-y-4">
+                    <div v-if="learnTips.length === 0" class="text-center text-gray-400 py-4 text-xl">加载中或暂无锦囊...</div>
+                    <div v-for="t in learnTips" class="bg-orange-50 p-5 rounded-2xl shadow-sm flex items-center gap-5 active:bg-orange-100" @click="speak(t.title + '。' + t.content)">
+                        <div class="w-14 h-14 bg-orange-200 rounded-full flex items-center justify-center text-orange-600 text-xl flex-shrink-0">
+                            <i :class="t.icon || 'fas fa-lightbulb'"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-xl font-bold text-gray-900">{{ t.title }}</h4>
+                            <p class="text-orange-800 text-base mt-1">{{ t.content }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 看案例 -->
+            <div v-if="currentView === 'cases'" class="space-y-5">
+                <button @click="currentView = 'home'" class="bg-white px-6 py-3 rounded-xl text-purple-600 font-bold shadow-sm mb-2 flex items-center gap-2 text-lg active:bg-purple-50"><i class="fas fa-arrow-left"></i> 返回首页</button>
+                <div v-if="cases.length === 0" class="text-center text-gray-400 py-4 text-xl">正在加载案例...</div>
+                <div v-for="c in cases" class="bg-white p-6 rounded-2xl shadow-sm border-l-8 border-purple-500 active:bg-purple-50 transition-colors" @click="showDetail(c)">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-bold bg-purple-100 text-purple-700 px-3 py-1 rounded-lg">#{{ c.category }}</span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-800">{{ c.title }}</h3>
+                    <p class="text-gray-500 mt-2 line-clamp-2 text-lg leading-relaxed">{{ c.summary }}</p>
+                </div>
+            </div>
+
+            <!-- 做测试 -->
+            <div v-if="currentView === 'quiz'" class="h-full flex flex-col">
+                <div class="flex justify-between items-center mb-6">
+                    <button @click="quitQuiz" class="bg-gray-200 px-5 py-2 rounded-xl text-gray-600 font-bold text-lg">退出</button>
+                    <span class="text-xl font-bold text-yellow-600 bg-yellow-50 px-4 py-2 rounded-xl">进度：{{ quizIndex + 1 }} / {{ quizList.length }}</span>
+                </div>
+
+                <div v-if="quizList.length > 0" class="flex-1 flex flex-col">
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border-2 border-yellow-100 mb-8 text-center flex-1 flex flex-col justify-center relative">
+                        <button v-if="quizIndex > 0" @click="prevQuiz" class="absolute top-4 left-4 text-gray-400 font-bold text-lg p-2 active:bg-gray-100 rounded-lg flex items-center gap-1">
+                            <i class="fas fa-arrow-up"></i> 上一题
+                        </button>
+                        <h2 class="text-3xl font-bold text-gray-900 leading-normal mt-6">{{ quizList[quizIndex].content }}</h2>
+                    </div>
+                    <div class="space-y-5 mb-8">
+                        <button @click="submitAnswer('A')" class="w-full py-6 bg-white border-4 border-blue-100 text-blue-600 text-2xl font-bold rounded-3xl shadow-sm active:bg-blue-600 active:text-white transition-colors">
+                            A. {{ quizList[quizIndex].optionA }}
+                        </button>
+                        <button @click="submitAnswer('B')" class="w-full py-6 bg-white border-4 border-green-100 text-green-600 text-2xl font-bold rounded-3xl shadow-sm active:bg-green-600 active:text-white transition-colors">
+                            B. {{ quizList[quizIndex].optionB }}
+                        </button>
+                    </div>
+                </div>
+                <div v-else class="text-center text-xl text-gray-500 mt-20">
+                    <i class="fas fa-spinner fa-spin mb-4 text-3xl"></i><br>正在生成随机试卷...
+                </div>
+            </div>
+        </main>
+
+        <!-- 底部：关联子女 -->
+        <footer class="footer-btn flex items-center justify-between cursor-pointer" @click="openFamilyModal">
+            <div class="flex items-center gap-5">
+                <div class="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center text-green-600 text-2xl border-2 border-green-200">
+                    <i class="fas fa-user-group"></i>
+                </div>
+                <div>
+                    <p class="text-lg font-bold text-gray-800 leading-tight">紧急联系人：<span class="text-green-700">{{ currentGuardian.name || '未设置' }}</span></p>
+                    <p class="text-base text-gray-500 mt-1">电话：{{ currentGuardian.phone || '点击添加' }}</p>
+                </div>
+            </div>
+            <div class="bg-white p-3 rounded-full shadow-sm text-gray-400">
+                <i class="fas fa-pen text-xl"></i>
+            </div>
+        </footer>
+    </template>
+
+    <!-- 弹窗：个人信息编辑 -->
+    <div v-if="profileModal" class="fixed inset-0 bg-black/60 z-[90] flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm rounded-[2rem] p-6 modal-card">
+            <h3 class="text-2xl font-bold text-center mb-6 text-gray-800">修改个人资料</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-sm text-gray-500 font-bold ml-1">我的名字</label>
+                    <input v-model="profileForm.username" type="text" class="w-full p-4 border-4 border-gray-100 rounded-xl text-xl font-bold mt-1">
+                </div>
+                <div>
+                    <label class="text-sm text-gray-500 font-bold ml-1">我的年龄</label>
+                    <input v-model="profileForm.age" type="number" class="w-full p-4 border-4 border-gray-100 rounded-xl text-xl font-bold mt-1">
+                </div>
+                <div>
+                    <label class="text-sm text-gray-500 font-bold ml-1">手机号 (不可修改)</label>
+                    <input v-model="profileForm.phone" type="text" readonly class="w-full p-4 border-2 border-gray-100 bg-gray-50 rounded-xl text-xl font-bold text-gray-400 mt-1">
+                </div>
+            </div>
+            <div class="flex gap-3 mt-8">
+                <button @click="profileModal = false" class="flex-1 py-3 bg-gray-100 text-gray-600 text-lg font-bold rounded-xl">取消</button>
+                <button @click="saveProfile" class="flex-1 py-3 bg-blue-600 text-white text-lg font-bold rounded-xl shadow-lg active:scale-95 transition-transform">保存修改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 弹窗：家庭管理 -->
+    <div v-if="childModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm rounded-[2rem] p-6 modal-card flex flex-col max-h-[85vh]">
+            <h3 class="text-2xl font-bold text-center mb-2 text-gray-800">亲情账号管理</h3>
+            <p class="text-center text-gray-500 mb-4">发生风险时将通知“主监护人”</p>
+            <div class="flex-1 overflow-y-auto mb-4 border-t border-b border-gray-100 py-2">
+                <div v-if="familyList.length === 0" class="text-center text-gray-400 py-8 text-lg">暂无家庭成员，请点击下方添加</div>
+                <div v-for="(member, idx) in familyList" :key="idx"
+                     class="family-item"
+                     :class="{'active': member.phone === user.guardianPhone}"
+                     @click="setPrimaryGuardian(member)">
+                    <div>
+                        <p class="text-xl font-bold text-gray-800">
+                            {{ member.name }}
+                            <span class="text-sm font-normal text-gray-500">({{ member.relation }})</span>
+                        </p>
+                        <p class="text-gray-600">{{ member.phone }}</p>
+                    </div>
+                    <div v-if="member.phone === user.guardianPhone" class="text-green-600 font-bold flex items-center gap-1">
+                        <i class="fas fa-check-circle"></i> 主监护人
+                    </div>
+                </div>
+            </div>
+            <div v-if="showAddMember" class="bg-gray-50 p-4 rounded-xl mb-4 space-y-3">
+                <input v-model="newMember.name" type="text" class="w-full p-3 border-2 border-gray-200 rounded-lg text-lg" placeholder="姓名 (如: 张伟)">
+                <div class="flex gap-2">
+                    <select v-model="newMember.relation" class="p-3 border-2 border-gray-200 rounded-lg text-lg bg-white">
+                        <option>儿子</option><option>女儿</option><option>孙子</option><option>孙女</option><option>老伴</option><option>其他</option>
+                    </select>
+                    <input v-model="newMember.phone" type="tel" maxlength="11" class="flex-1 p-3 border-2 border-gray-200 rounded-lg text-lg" placeholder="11位手机号">
+                </div>
+                <div class="flex gap-2">
+                    <button @click="showAddMember = false" class="flex-1 py-2 bg-gray-200 text-gray-600 rounded-lg font-bold">取消</button>
+                    <button @click="addFamilyMember" class="flex-1 py-2 bg-green-600 text-white rounded-lg font-bold">确认添加</button>
+                </div>
+            </div>
+            <div v-else class="space-y-3">
+                <button @click="showAddMember = true" class="w-full py-4 border-2 border-dashed border-gray-300 text-gray-500 text-xl font-bold rounded-xl active:bg-gray-50">
+                    + 添加家庭成员
+                </button>
+                <button @click="childModal = false" class="w-full py-4 bg-gray-100 text-gray-700 text-xl font-bold rounded-xl">
+                    关闭
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 弹窗：反诈报告 -->
+    <div v-if="reportModal" class="fixed inset-0 bg-black/70 z-[80] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-[2rem] p-6 modal-card relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-28 bg-gradient-to-br from-blue-600 to-blue-400"></div>
+            <div class="relative z-10 text-center -mt-2">
+                <div class="w-24 h-24 bg-white rounded-full mx-auto flex items-center justify-center shadow-xl border-4 border-white mb-3">
+                    <i class="fas fa-certificate text-blue-500 text-5xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800 mb-1">我的反诈体检单</h3>
+                <p class="text-gray-400 text-sm mb-6">{{ reportData.generateTime }} 生成</p>
+                <div class="space-y-4 text-left">
+                    <div class="flex gap-3">
+                        <div class="flex-1 bg-blue-50 p-3 rounded-xl text-center border border-blue-100">
+                            <div class="text-2xl font-black text-blue-600">{{ reportData.accuracy }}</div>
+                            <div class="text-xs text-blue-400 font-bold">综合正确率</div>
+                        </div>
+                        <div class="flex-1 bg-green-50 p-3 rounded-xl text-center border border-green-100">
+                            <div class="text-2xl font-black text-green-600">{{ reportData.correctCount }}/{{ reportData.totalQuestions }}</div>
+                            <div class="text-xs text-green-500 font-bold">答对题数</div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-xl border-l-4" :class="riskBorderColor">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-gray-700 font-bold">当前风险评估</span>
+                            <span :class="riskBadgeClass" class="px-3 py-1 rounded-full text-xs font-black bg-white shadow-sm">{{ riskText }}</span>
+                        </div>
+                        <p class="text-sm text-gray-600 leading-relaxed">{{ reportData.weakPoint }}</p>
+                    </div>
+                    <div class="bg-orange-50 p-4 rounded-xl border border-orange-100">
+                        <p class="text-orange-500 text-xs font-bold mb-1 flex items-center gap-1"><i class="fas fa-lightbulb"></i> 专家建议</p>
+                        <p class="text-orange-800 font-bold text-base leading-snug">{{ reportData.suggestion }}</p>
+                    </div>
+                </div>
+                <button @click="reportModal = false" class="w-full mt-6 py-4 bg-blue-600 text-white text-xl font-bold rounded-2xl shadow-lg active:scale-95 transition-transform">
+                    我记住了
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 弹窗：通用反馈 & 视频播放器 -->
+    <div v-if="modal.show" class="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm rounded-[2rem] p-6 text-center shadow-2xl modal-card relative">
+            <div v-if="modal.isVideo" class="mb-4">
+                <h3 class="text-2xl font-bold text-gray-900 mb-4">{{ modal.title }}</h3>
+                <video
+                        :src="modal.content" controls autoplay class="w-full rounded-xl shadow-lg bg-black"
+                        style="min-height: 200px;"
+                        poster="https://via.placeholder.com/400x225/000000/FFFFFF/?text=视频加载中"
+                >您的浏览器不支持视频播放。</video>
+            </div>
+            <div v-else>
+                <div class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" :class="modal.isSuccess ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'">
+                    <i :class="modal.icon" class="text-4xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-3">{{ modal.title }}</h3>
+                <p class="text-xl text-gray-600 mb-8 leading-relaxed font-medium">{{ modal.content }}</p>
+            </div>
+            <button @click="closeModal" class="w-full py-4 bg-red-600 text-white text-2xl font-bold rounded-2xl shadow-md active:scale-95 transition-transform">
+                {{ modal.isVideo ? '关闭视频' : '知道了' }}
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const { createApp, ref, reactive, computed, onMounted, watch } = Vue;
+    const API = 'http://localhost:8080/api/v1';
+
+    createApp({
+        setup() {
+            const isLoggedIn = ref(false);
+            const isRegister = ref(false);
+            const currentView = ref('home');
+            const voiceOn = ref(true);
+            const user = reactive({ id: null, username: '', age: '', riskLevel: 0, guardianPhone: '' });
+            const loginForm = reactive({ phone: '13800138000' });
+            const regForm = reactive({ phone: '', username: '' });
+
+            const cases = ref([]);
+            const quizList = ref([]);
+            const quizIndex = ref(0);
+            const correctCount = ref(0);
+            const learnVideos = ref([]);
+            const learnTips = ref([]);
+
+            const childModal = ref(false);
+            const showAddMember = ref(false);
+            const familyList = ref([]);
+            const newMember = reactive({ name: '', relation: '儿子', phone: '' });
+
+            const reportModal = ref(false);
+            const reportData = reactive({ accuracy: '0%', correctCount: 0, totalQuestions: 10, studyHours: '0', weakPoint: '', suggestion: '', generateTime: '' });
+
+            const profileModal = ref(false);
+            const profileForm = reactive({ username: '', age: '', phone: '' });
+
+            const modal = reactive({ show: false, title: '', content: '', icon: '', isSuccess: true, isVideo: false });
+
+            const riskText = computed(() => ['安全', '警惕', '高危'][user.riskLevel] || '待测');
+            const riskBadgeClass = computed(() => ['text-green-600', 'text-yellow-600', 'text-red-600'][user.riskLevel]);
+            const riskBorderColor = computed(() => ['border-green-500', 'border-yellow-500', 'border-red-500'][user.riskLevel] || 'border-gray-300');
+
+            const currentGuardian = computed(() => {
+                const found = familyList.value.find(m => m.phone === user.guardianPhone);
+                return found || { name: '未设置', phone: '' };
+            });
+
+            const speak = (text) => {
+                if (!voiceOn.value) return;
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = 'zh-CN'; u.rate = 0.9; u.volume = 1.0;
+                window.speechSynthesis.speak(u);
+            };
+
+            const speakQuestion = (q) => {
+                setTimeout(() => {
+                    const text = `第${quizIndex.value + 1}题：${q.content}。选项A：${q.optionA}。选项B：${q.optionB}`;
+                    speak(text);
+                }, 500);
+            };
+
+            const toggleVoice = () => { voiceOn.value = !voiceOn.value; if(voiceOn.value) speak("语音播报已开启"); };
+
+            const loadFamilyList = () => {
+                if(!user.id) return;
+                const saved = localStorage.getItem('family_list_' + user.id);
+                if(saved) {
+                    familyList.value = JSON.parse(saved);
+                } else if (user.guardianPhone) {
+                    familyList.value = [{ name: '子女', relation: '亲属', phone: user.guardianPhone }];
+                } else {
+                    familyList.value = [];
+                }
+            };
+
+            const showReport = async () => {
+                try {
+                    const res = await axios.get(`${API}/report/${user.id}`);
+                    if (res.data.code === 200) {
+                        Object.assign(reportData, res.data.data);
+                        reportModal.value = true;
+                        const score = parseInt(reportData.accuracy);
+                        if (score >= 80) {
+                            speak("您的反诈意识很强，这是您的体检报告。");
+                        } else {
+                            speak("您的风险较高，请查看报告并加强学习。");
+                        }
+                    }
+                } catch(e) { alert("获取报告失败"); }
+            };
+
+            const openProfileModal = () => {
+                profileForm.username = user.username;
+                profileForm.age = user.age || '';
+                profileForm.phone = loginForm.phone;
+                profileModal.value = true;
+                speak("您可以修改您的个人信息");
+            };
+
+            const saveProfile = async () => {
+                try {
+                    const res = await axios.put(`${API}/admin/users`, {
+                        id: user.id, username: profileForm.username, age: profileForm.age
+                    });
+                    if (res.data.code === 200) {
+                        user.username = profileForm.username;
+                        user.age = profileForm.age;
+                        profileModal.value = false;
+                        speak("信息修改成功");
+                        showModal("成功", "个人信息已更新", "fas fa-check", true);
+                    } else { alert(res.data.msg); }
+                } catch(e) { alert("更新失败，请检查网络"); }
+            };
+
+            const handleLogin = async () => {
+                try {
+                    const res = await axios.post(`${API}/user/login`, { phone: loginForm.phone });
+                    if (res.data.code === 200) {
+                        Object.assign(user, res.data.data);
+                        isLoggedIn.value = true;
+                        loadFamilyList();
+                        speak(`登录成功，欢迎回来 ${user.username}`);
+                    } else {
+                        showModal("登录失败", res.data.msg, "fas fa-exclamation", false);
+                    }
+                } catch (e) { alert("服务器未启动"); }
+            };
+
+            const handleRegister = async () => {
+                if(!/^1[3-9]\d{9}$/.test(regForm.phone)) return showModal("号码错误", "请输入正确的11位手机号码", "fas fa-xmark", false);
+                if(!regForm.username) return showModal("信息缺失", "请输入您的姓名", "fas fa-xmark", false);
+                try {
+                    const res = await axios.post(`${API}/user/register`, { phone: regForm.phone, username: regForm.username });
+                    if (res.data.code === 200) {
+                        showModal("注册成功", "请使用新账号登录", "fas fa-check", true);
+                        isRegister.value = false;
+                        loginForm.phone = regForm.phone;
+                    } else {
+                        showModal("注册失败", res.data.msg, "fas fa-xmark", false);
+                    }
+                } catch (e) { alert("注册失败，请检查网络"); }
+            };
+
+            const handleLogout = () => {
+                isLoggedIn.value = false;
+                Object.assign(user, { id: null, username: '', riskLevel: 0, guardianPhone: '' });
+                currentView.value = 'home';
+                loginForm.phone = '';
+                isRegister.value = false;
+                familyList.value = [];
+                speak("已退出登录");
+            };
+
+            const switchView = async (view) => {
+                currentView.value = view;
+                if(view === 'cases') {
+                    const res = await axios.get(`${API}/cases/list`);
+                    cases.value = res.data.data;
+                }
+                if(view === 'learn') {
+                    const res = await axios.get(`${API}/knowledge/list`);
+                    if(res.data.code === 200) {
+                        const list = res.data.data;
+                        learnVideos.value = list.filter(i => i.type === 'VIDEO');
+                        learnTips.value = list.filter(i => i.type === 'TIP');
+                    }
+                }
+                if(view !== 'quiz') speak("正在加载内容");
+            };
+
+            const loadQuiz = async () => {
+                const res = await axios.get(`${API}/quiz/questions`);
+                quizList.value = res.data.data;
+                quizIndex.value = 0;
+                correctCount.value = 0;
+                currentView.value = 'quiz';
+                if (quizList.value.length > 0) {
+                    speak("开始测试，共10道题。请听题。");
+                    speakQuestion(quizList.value[0]);
+                }
+            };
+
+            const quitQuiz = () => {
+                window.speechSynthesis.cancel();
+                currentView.value = 'home';
+                speak("已退出测试");
+            };
+
+            const prevQuiz = () => {
+                if(quizIndex.value > 0) {
+                    quizIndex.value--;
+                    speakQuestion(quizList.value[quizIndex.value]);
+                }
+            };
+
+            const submitAnswer = (choice) => {
+                const q = quizList.value[quizIndex.value];
+                const isCorrect = choice === q.correctOption;
+                if(isCorrect) correctCount.value++;
+                showModal(isCorrect ? "回答正确" : "回答错误", q.analysis, isCorrect ? "fas fa-check" : "fas fa-xmark", isCorrect);
+                speak(isCorrect ? "答对了" : "答错了。" + q.analysis);
+            };
+
+            const showModal = (title, content, icon, isSuccess, isVideo = false) => {
+                modal.title = title; modal.content = content;
+                modal.icon = icon; modal.isSuccess = isSuccess;
+                modal.isVideo = isVideo;
+                modal.show = true;
+            };
+
+            const closeModal = async () => {
+                modal.show = false;
+                if(currentView.value === 'quiz' && !modal.isVideo) {
+                    if (quizIndex.value < quizList.value.length - 1) {
+                        quizIndex.value++;
+                        speakQuestion(quizList.value[quizIndex.value]);
+                    } else {
+                        const score = correctCount.value / quizList.value.length;
+                        await axios.post(`${API}/quiz/submit`, { userId: user.id, score: score });
+                        const res = await axios.get(`${API}/user/${user.id}`);
+                        Object.assign(user, res.data.data);
+                        currentView.value = 'home';
+                        setTimeout(() => {
+                            showModal("测试完成", `您做对了 ${correctCount.value} 道题，风险等级已更新`, "fas fa-flag", true);
+                            speak("测试完成");
+                        }, 300);
+                    }
+                }
+            };
+
+            const openFamilyModal = () => {
+                loadFamilyList();
+                childModal.value = true;
+                showAddMember.value = false;
+                speak("管理亲情账号");
+            };
+
+            const addFamilyMember = async () => {
+                if (!newMember.name) return alert("请输入姓名");
+                if (!/^1[3-9]\d{9}$/.test(newMember.phone)) return alert("手机号格式错误");
+                const newItem = { ...newMember };
+                familyList.value.push(newItem);
+                if (familyList.value.length === 1) await setPrimaryGuardian(newItem);
+                else saveFamilyLocally();
+                newMember.name = ''; newMember.phone = '';
+                showAddMember.value = false;
+                speak("添加成功");
+            };
+
+            const setPrimaryGuardian = async (member) => {
+                try {
+                    await axios.post(`${API}/user/bind`, { elderId: user.id, childPhone: member.phone });
+                    user.guardianPhone = member.phone;
+                    saveFamilyLocally();
+                    speak(`已将 ${member.name} 设为主监护人`);
+                } catch(e) { alert("网络异常"); }
+            };
+
+            const saveFamilyLocally = () => {
+                localStorage.setItem('family_list_' + user.id, JSON.stringify(familyList.value));
+            };
+
+            const callHelp = () => {
+                if(!user.guardianPhone) return showModal("未绑定", "请先在底部设置关联子女", "fas fa-exclamation", false);
+                const guardian = currentGuardian.value;
+                showModal("正在呼叫", `正在联系 ${guardian.name} (${user.guardianPhone})...`, "fas fa-phone", false);
+                speak(`正在呼叫 ${guardian.name}`);
+            };
+
+            const playVideo = (v) => {
+                const videoSrc = v.content.startsWith('http://example.com') ? 'https://www.w3schools.com/html/mov_bbb.mp4' : v.content;
+                showModal(v.title, videoSrc, "fas fa-play", true, true);
+                speak("播放视频");
+            };
+
+            const showDetail = (c) => {
+                if(c.videoUrl && c.videoUrl.length > 5) {
+                    const videoSrc = c.videoUrl.startsWith('http://example.com') ? 'https://www.w3schools.com/html/mov_bbb.mp4' : c.videoUrl;
+                    showModal(c.title, videoSrc, "fas fa-play", true, true);
+                } else {
+                    showModal(c.title, c.summary, "fas fa-book", true);
+                }
+                speak(c.title);
+            };
+
+            return {
+                isLoggedIn, isRegister, currentView, voiceOn, user, loginForm, regForm,
+                cases, quizList, quizIndex, learnVideos, learnTips,
+                childModal, showAddMember, familyList, newMember, currentGuardian,
+                reportModal, reportData, profileModal, profileForm, riskBorderColor,
+                modal, riskText, riskBadgeClass,
+                handleLogin, handleLogout, handleRegister, toggleVoice, switchView,
+                loadQuiz, quitQuiz, prevQuiz, submitAnswer,
+                openFamilyModal, addFamilyMember, setPrimaryGuardian,
+                showReport, openProfileModal, saveProfile,
+                saveChild: () => {},
+                callHelp, playVideo, showDetail, closeModal, speak
+            };
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>
